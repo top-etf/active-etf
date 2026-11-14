@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>主動式 ETF 每日持股</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--rs:118px;
+  /* 1114 他：「我都要深色底的」 */
+  color-scheme:dark;
+  --bg:#161b22;--ink:#e6eaf0;--sub:#9aa4b2;--line:#2b323c;
+  --brand:#4d8fe8;--brandSel:#1f4fae;--brandInk:#a9c4f5;--brandBg:#1e2c45;
+  --up:#ff5a4f;--dn:#2ec27e;--flat:#6b717a;
+  --box:#1e252e;--hover:#1c222a;--mute:#727c89;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;font-size:15px;line-height:1.5;-webkit-text-size-adjust:100%}
+.num{font-variant-numeric:tabular-nums}
+.up{color:var(--up)}.dn{color:var(--dn)}
+
+.wrap{display:grid;grid-template-columns:230px minmax(0,1fr);gap:24px;max-width:1200px;margin:0 auto;padding:20px 20px 28px}
+
+/* 左邊四個切換 */
+.pick{display:flex;flex-direction:column;gap:6px;align-self:start;position:sticky;top:12px}
+.pick button{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 10px;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+@media (hover:hover){.pick button:hover{background:var(--hover)}}
+.pick button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.pick .c{font-weight:700;font-size:16px}
+.pick .n{grid-column:1;font-size:13px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pick .s{grid-row:1/3;grid-column:2;font-size:14px;white-space:nowrap}
+.pick button[aria-pressed=true]{background:var(--brandSel);border-color:var(--brand);color:#fff}
+.pick button[aria-pressed=true] .n{color:#dbe6fb}
+.pick button[aria-pressed=true] .up,.pick button[aria-pressed=true] .dn{color:#fff}
+
+/* 右邊 */
+.hd{font-size:15px;color:var(--sub);margin:0 0 8px}
+.hd b{color:var(--ink);font-size:18px;margin-right:8px}
+.hd .dt{color:var(--ink)}
+.note{font-size:13px;color:#f2c46d;background:#2a2416;border-left:3px solid #c9932e;padding:6px 10px;margin:0 0 10px}
+.hd .sep{color:var(--mute);margin:0 6px}
+.hd .ma{color:var(--brandInk)}
+.hd .g{white-space:nowrap}
+.lg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--sub);margin:0 0 12px}
+.lg i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.lg .dash{display:inline-block;width:18px;border-top:1.5px dashed var(--sub);vertical-align:3px;margin-right:5px}
+.tag{display:inline-block;font-size:12px;line-height:17px;padding:0 6px;border-radius:4px;border:1px solid var(--brand);background:var(--brandBg);color:var(--brandInk);white-space:nowrap}
+
+.box{background:var(--box);border-left:3px solid var(--brand);padding:10px 14px;margin:0 0 12px;font-size:14px;line-height:1.75}
+.box p{margin:0}.box p+p{margin-top:2px}.box p.m{margin-top:8px}
+.box i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
+.box .tag{margin-right:6px}
+
+.rows{border-top:1px solid var(--line)}
+.r{display:grid;grid-template-columns:6.2em minmax(0,1fr) 9.5em;align-items:center;gap:10px;min-height:32px;padding:2px 4px;font-size:14px}
+@media (hover:hover){.r:hover{background:var(--hover)}}
+.r .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r .bar{display:flex;align-items:center;gap:7px;min-width:0}
+.r .bar b{height:16px;border-radius:2px;flex:none;min-width:2px}
+.r .bar span{white-space:nowrap;font-size:13px}
+.r .bar .tag{font-size:11px;line-height:15px;padding:0 5px}
+.r .ch{text-align:right;white-space:nowrap;font-size:13px}
+.r .ch small{font-size:12px;margin-left:5px}
+.r .ch .no{color:var(--mute)}
+.l60{position:relative;border-top:1.5px dashed var(--sub);margin:8px 4px 10px}
+.l60 em{position:absolute;right:0;top:-10px;background:var(--bg);padding:0 6px;font-size:12px;font-style:normal;color:var(--sub)}
+.err{padding:24px;color:var(--sub)}
+
+/* 平板：四個切換改成上面一排 */
+@media (max-width:900px){
+  .wrap{grid-template-columns:1fr;gap:14px;padding:16px}
+  .pick{position:static;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+  .pick button{grid-template-columns:1fr;padding:8px 10px;gap:0}
+  .pick .s{grid-row:auto;grid-column:1;font-size:13px}
+}
+/* 手機：切換 2×2、長條列收窄 */
+@media (max-width:600px){
+  body{font-size:14px}
+  .wrap{padding:12px 16px 20px}
+  .pick{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pick .c{font-size:15px}
+  .hd .tt{display:block;margin:0 0 6px}
+  .hd b{font-size:17px}
+  .hd .lead{display:none}
+  .hd{font-size:14px;line-height:1.7}
+  .box{padding:9px 11px;font-size:13.5px}
+  .r{--rs:104px;grid-template-columns:5.4em minmax(0,1fr) 3.6em;gap:7px;font-size:13.5px;padding:2px 0}
+  .r .ch small,.lg .wide{display:none}
+  .r .bar span{font-size:12px}
+  .r .bar{gap:5px}
+  /* 1114 他：「手機的整理 放到下面 讓人必須往下滑」：加碼／減碼／站上月線名單移到長條圖下面 */
+  #main{display:flex;flex-direction:column}
+  #main .rows{order:1}
+  /* 1114 他：「這些也下去」：日期、持股檔數、六成、加減碼、站上月線那行也移到長條圖下面；ETF 名稱留在上面 */
+  #main .hd{display:contents}
+  #main .hd .st{order:2;display:block;margin:16px 0 0;font-size:14px;line-height:1.7;color:var(--sub)}
+  #main .box{order:3;margin:10px 0 0}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="pick" id="pick" aria-label="切換 ETF"></nav>
+  <main id="main"><div class="err">資料載入中…</div></main>
+</div>
+<script>
+(function(){
+const ES=['00981A','00406A','00403A'],AL='ALL';
+let AE=null,K=AL,D=null;
+const f2=v=>v.toFixed(2),zs=q=>q>0&&q<1000?q+'股':Math.round(q/1000).toLocaleString()+'張';
+const pp=v=>Math.abs(v)<0.005?'<0.01':f2(Math.abs(v));
+const wtx=w=>w<=0?'已賣光':w<0.005?'不到 0.01%':f2(w)+'%';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const md=d=>d.slice(5).replace('-','/');
+
+// 1114 修：某檔當天還沒公布時，單檔頁顯示它最近一天；三檔綜合只平均當天有資料的幾檔
+const has=(e,d)=>!!(AE.etf[e]&&AE.etf[e].d[d]);
+function dOf(k){if(k==AL)return D;for(let i=AE.dates.length-1;i>=0;i--)if(has(k,AE.dates[i]))return AE.dates[i];return null}
+const okE=()=>ES.filter(e=>has(e,D));
+const cn=n=>['','一','兩','三'][n]||n;
+function rowsOf(k){
+  if(k!=AL){const d=dOf(k);return d?AE.etf[k].d[d].map(r=>({c:r[0],n:r[1],w:r[2],tp:r[3],q:r[4],dq:r[5],ma:r[6]})):[]}
+  const E=okE(),n=E.length||1,m={};E.forEach(e=>AE.etf[e].d[D].forEach(r=>{const x=m[r[0]]||(m[r[0]]={c:r[0],n:r[1],w:0,tp:0,by:[]});x.w+=r[2]/n;x.tp+=r[3]/n;x.by.push(r);if(r[6]!=null)x.ma=r[6]}));
+  return Object.values(m);
+}
+// 當天動作：百分點夠大看百分點；太小改看張數（跟看盤大師同一套）
+function act(r,k){if(r.tp>0.0005)return 1;if(r.tp<-0.0005)return -1;const ds=k==AL?r.by.map(x=>x[5]):[r.dq];const p=ds.some(v=>v>0),n=ds.some(v=>v<0);return p&&!n?1:n&&!p?-1:0}
+function maUp(r,k){return r.ma>0&&(k==AL?r.w>0:r.q>0)}
+function sumOf(k){const L=rowsOf(k);return{a:L.filter(r=>act(r,k)>0).length,b:L.filter(r=>act(r,k)<0).length}}
+
+function pick(){
+  document.getElementById('pick').innerHTML=[AL,...ES].map(k=>{const S=sumOf(k);
+    return `<button type="button" data-k="${k}" aria-pressed="${k==K}"><span class="c">${k==AL?'三檔綜合':k}</span><span class="n">${k==AL?cn(okE().length)+'檔平均':esc(AE.etf[k].name)}</span><span class="s num"><span class="up">加${S.a}</span> <span class="dn">減${S.b}</span></span></button>`}).join('');
+}
+function main(){
+  const DK=dOf(K),E=okE(),miss=ES.filter(e=>!has(e,D));
+  const L=rowsOf(K).filter(r=>K==AL?(r.w>0||act(r,AL)!==0):(r.q>0||r.dq!==0)).sort((a,b)=>b.w-a.w||b.tp-a.tp);
+  const mx=Math.max(...L.map(r=>r.w),1);
+  let cum=0,k60=-1;L.forEach((r,i)=>{cum+=r.w;if(k60<0&&cum>=60)k60=i});
+  const tot=L.reduce((s,r)=>s+r.w,0),held=L.filter(r=>K==AL?r.w>0:r.q>0).length;
+  const A=L.filter(r=>act(r,K)>0).sort((a,b)=>b.tp-a.tp),B=L.filter(r=>act(r,K)<0).sort((a,b)=>a.tp-b.tp),M=L.filter(r=>maUp(r,K));
+  const nm=K==AL?`三檔綜合（${cn(E.length)}檔平均）`:K+' '+esc(AE.etf[K].name),sp='<span class="sep">｜</span>';
+  const sg=[`持股 ${held} 檔、股票共占 <span class="num">${tot.toFixed(1)}%</span>`,k60>=0?`前 ${k60+1} 檔就占六成`:'股票合計不到六成',`加碼 ${A.length} 檔、減碼 ${B.length} 檔`,`<span class="ma">站上月線 ${M.length} 檔</span>`];
+  let h=`<div class="hd"><span class="tt"><b>${nm}</b><span class="dt num">${DK?md(DK):''}</span></span><span class="st"><span class="sep lead">｜</span>${sg.map(x=>`<span class="g">${x}</span>`).join(sp)}</span></div>`;
+  if(K==AL&&miss.length)h+=`<div class="note">${miss.join('、')} ${md(D)} 還沒公布，三檔綜合先用另外${cn(E.length)}檔平均。</div>`;
+  if(K!=AL&&DK!=D)h+=`<div class="note">${K} ${md(D)} 還沒公布，${DK?'先顯示 '+md(DK)+' 的持股':'目前沒有資料'}。</div>`;
+  h+=`<div class="lg"><span><i style="background:var(--up)"></i>今天加碼</span><span><i style="background:var(--dn)"></i>今天減碼</span><span><i style="background:var(--flat)"></i>沒動</span><span><span class="dash"></span>虛線＝累計到六成</span><span><span class="tag" style="margin-right:5px">月線上</span>收盤在月線（20 日均線）之上</span><span>右邊數字＝今天權重增減幾個百分點${K!=AL?'<span class="wide">，後面是買賣張數</span>':''}</span></div>`;
+  const ls=X=>X.length?X.map(r=>esc(r.n)).join('、'):'無';
+  h+=`<div class="box"><p><i style="background:var(--up)"></i><b>加碼 ${A.length} 檔</b>：${ls(A)}</p><p><i style="background:var(--dn)"></i><b>減碼 ${B.length} 檔</b>：${ls(B)}</p>`;
+  h+=`<p class="m"><span class="tag">月線上</span><b>站上月線 ${M.length} 檔</b>：${M.length?M.map(r=>`${esc(r.n)}（+${r.ma.toFixed(1)}%）`).join('、'):'無'}</p></div>`;
+  h+='<div class="rows">';
+  L.forEach((r,i)=>{const a=act(r,K),up=a>0,dn=a<0,col=up?'var(--up)':dn?'var(--dn)':'var(--flat)';
+    const wt=K!=AL&&r.q==0?'已賣光':wtx(r.w);
+    let c='<span class="no">—</span>';
+    if(up||dn){c=`<span class="${up?'up':'dn'}">${up?'+':'−'}${pp(r.tp)}</span>`;if(K!=AL&&r.dq)c+=`<small class="${up?'up':'dn'}">${r.dq>0?'+':'−'}${zs(Math.abs(r.dq))}</small>`}
+    h+=`<div class="r"><span class="nm" title="${esc(r.n)} ${esc(r.c)}">${esc(r.n)}</span><span class="bar"><b style="width:calc((100% - var(--rs)) * ${Math.max(r.w/mx,0.004).toFixed(4)});background:${col}"></b><span class="num">${wt}</span>${maUp(r,K)?'<span class="tag">月線上</span>':''}</span><span class="ch num">${c}</span></div>`;
+    if(i==k60&&i<L.length-1)h+='<div class="l60"><em>以上合計約六成</em></div>'});
+  h+='</div>';
+  document.getElementById('main').innerHTML=h;
+  tell();
+}
+// 1114 修：把自己的高度告訴外面的網站，嵌入框才能自動撐高（不會框中框捲動）
+let lastH=0;
+function tell(){if(parent===window)return;const h=Math.ceil(document.querySelector('.wrap').getBoundingClientRect().height);if(h&&h!==lastH){lastH=h;parent.postMessage({aetfH:h},'*')}}
+addEventListener('resize',()=>{lastH=0;tell()});
+if(document.fonts)document.fonts.ready.then(()=>{lastH=0;tell()});
+// 網站的 JS 可能被延後才跑（LiteSpeed），所以網站準備好時會來問一次高度
+addEventListener('message',e=>{if(e.data&&e.data.aetfAsk){lastH=0;tell()}});
+function show(j){AE=j;D=j.dates[j.dates.length-1];if(!D){document.getElementById('main').innerHTML='<div class="err">目前沒有資料。</div>';tell();return}pick();main();
+  document.getElementById('pick').onclick=e=>{const b=e.target.closest('button');if(!b)return;K=b.dataset.k;pick();main()};}
+if(window.AE_DATA)show(window.AE_DATA);
+else fetch('aetf.json?'+Date.now()).then(r=>r.json()).then(show).catch(()=>{document.getElementById('main').innerHTML='<div class="err">資料讀不到，請稍後再試。</div>';tell()});
+})();
+</script>
+</body>
+</html>
